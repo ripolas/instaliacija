@@ -2,28 +2,28 @@ package Buttons;
 
 import java.util.concurrent.CountDownLatch;
 
-public class Button {
-    private Runnable onClick = () -> {};
+public class PhysicalButton {
+    private Runnable onPress = () -> {};
     private Runnable onRelease = () -> {};
     private CountDownLatch releaseLatch = new CountDownLatch(0);
-    private CountDownLatch clickLatch = new CountDownLatch(1);
+    private CountDownLatch pressLatch = new CountDownLatch(1);
 
-    public void setOnClick(Runnable runnable){
-        onClick = runnable;
+    public void setOnPress(Runnable runnable){
+        onPress = runnable;
     }
     public void setOnRelease(Runnable runnable){
         onRelease = runnable;
     }
     public void setNextAction(Runnable runnable){
-        if(isClicked()){
+        if(isPressed()){
             onRelease = runnable;
         }else{
-            onClick = runnable;
+            onPress = runnable;
         }
     }
 
-    public void clearOnClick(){
-        onClick = () -> {};
+    public void clearOnPress(){
+        onPress = () -> {};
     }
     public void clearOnRelease(){
         onRelease = () -> {};
@@ -32,32 +32,32 @@ public class Button {
         setNextAction(() -> {});
     }
 
-    public void click(){
+    public void press(){
         try {
             releaseLatch.await();
-            clickLatch = new CountDownLatch(1);
-            onClick.run();
+            pressLatch = new CountDownLatch(1);
+            onPress.run();
         }catch (Exception e){
             throw new RuntimeException(e);
         }
     }
     public void release(){
         try{
-            clickLatch.await();
+            pressLatch.await();
             releaseLatch = new CountDownLatch(1);
             onRelease.run();
         }catch (Exception e){
             throw new RuntimeException(e);
         }
     }
-    public void toggleClick(){
-        if(isClicked()){
+    public void togglePress(){
+        if(isPressed()){
             release();
         }else{
-            click();
+            press();
         }
     }
-    public boolean isClicked(){
+    public boolean isPressed(){
         return releaseLatch.getCount() == 1;
     }
 }

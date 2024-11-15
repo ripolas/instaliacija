@@ -1,6 +1,6 @@
 package Buttons;
 
-public class LightableButton extends Button {
+public class LightableButton extends PhysicalButton {
     private boolean lit = false;
 
     public boolean isLit(){

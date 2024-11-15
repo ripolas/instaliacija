@@ -14,7 +14,7 @@ public class AudioPlayer{
     private final int loopTimes;
 
     public AudioPlayer(String filePath) {
-        this(filePath, 1);
+        this(filePath, 0);
     }
     public AudioPlayer(String filePath, int loopTimes) {
         this.filePath = filePath;
