@@ -7,6 +7,11 @@ import java.util.concurrent.CompletableFuture;
 public class AudioRecorder {
 
     private TargetDataLine microphone = null;
+    private final String path;
+
+    public AudioRecorder(String path){
+        this.path = path;
+    }
 
     private static AudioFormat getAudioFormat() {
         float sampleRate = 44100;
@@ -17,7 +22,7 @@ public class AudioRecorder {
         return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed, bigEndian);
     }
 
-    public void start(String path) {
+    public void start() {
         AudioFormat format = getAudioFormat();
         DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
         if (!AudioSystem.isLineSupported(info)) {
@@ -28,7 +33,7 @@ public class AudioRecorder {
             microphone.open(format);
             microphone.start();
             File file = new File(path);
-            CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(() -> {
+            CompletableFuture.runAsync(() -> {
                 try (AudioInputStream audioStream = new AudioInputStream(microphone)) {
                     AudioSystem.write(audioStream, AudioFileFormat.Type.WAVE, file);
                 } catch (Exception ignored) {}
