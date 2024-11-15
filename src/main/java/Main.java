@@ -77,10 +77,14 @@ public class Main {
             button.whenPressed(n -> recordButton.press());
             button.whenReleased(n -> recordButton.release());
         }
-        System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         try (Button button = new Button(24)) {
             button.whenPressed(n -> recordButton.press());
             button.whenReleased(n -> recordButton.release());
+        }
+        try {
+            Thread.currentThread().join();
+        }catch (Exception e){
+            throw new RuntimeException(e);
         }
         /*Scanner scanner = new Scanner(System.in);
         while(true){
