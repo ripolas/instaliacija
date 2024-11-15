@@ -3,8 +3,6 @@ import Audio.AudioRecorder;
 import Buttons.LightableButton;
 import com.diozero.devices.Button;
 
-import java.util.Scanner;
-
 public class Main {
     public static long index = 10000L;
 
@@ -78,8 +76,8 @@ public class Main {
             button.whenReleased(n -> recordButton.release());
         }
         try (Button button = new Button(24)) {
-            button.whenPressed(n -> recordButton.press());
-            button.whenReleased(n -> recordButton.release());
+            button.whenPressed(n -> playButton.press());
+            button.whenReleased(n -> playButton.release());
         }
         try {
             Thread.currentThread().join();
