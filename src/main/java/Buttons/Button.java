@@ -15,7 +15,11 @@ public abstract class Button {
         onRelease = runnable;
     }
     public void setNextAction(Runnable runnable){
-        isClicked()
+        if(isClicked()){
+            onRelease = runnable;
+        }else{
+            onClick = runnable;
+        }
     }
 
     public void clearOnClick(){
