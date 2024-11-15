@@ -1,6 +1,7 @@
 import Audio.AudioPlayer;
 import Audio.AudioRecorder;
 import Buttons.LightableButton;
+import com.diozero.api.GpioPullUpDown;
 import com.diozero.devices.Button;
 
 public class Main {
@@ -93,6 +94,19 @@ public class Main {
                 System.out.println("RELEASED2");
                 playButton.release();
             });
+        }
+        for(int i=1; i<=27; i++) {
+            try (Button button = new Button(i)) {
+                int finalI = i;
+                button.whenPressed(n -> {
+                    System.out.println("PRESSED(" + finalI + ")");
+                    playButton.press();
+                });
+                button.whenReleased(n -> {
+                    System.out.println("RELEASED(" + finalI + ")");
+                    playButton.release();
+                });
+            }
         }
         try {
             Thread.currentThread().join();
