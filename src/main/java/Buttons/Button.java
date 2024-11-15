@@ -2,7 +2,7 @@ package Buttons;
 
 import java.util.concurrent.CountDownLatch;
 
-public abstract class Button {
+public class Button {
     private Runnable onClick = () -> {};
     private Runnable onRelease = () -> {};
     private CountDownLatch releaseLatch = new CountDownLatch(0);
@@ -27,6 +27,9 @@ public abstract class Button {
     }
     public void clearOnRelease(){
         onRelease = () -> {};
+    }
+    public void clearNextAction(){
+        setNextAction(() -> {});
     }
 
     public void click(){
