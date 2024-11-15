@@ -72,12 +72,24 @@ public class Main {
         setDefaultActions();
         setLit(true);
         try (Button button = new Button(23)) {
-            button.whenPressed(n -> recordButton.press());
-            button.whenReleased(n -> recordButton.release());
+            button.whenPressed(n -> {
+                System.out.println("PRESSED1");
+                recordButton.press();
+            });
+            button.whenReleased(n -> {
+                System.out.println("RELEASED1");
+                recordButton.release();
+            });
         }
         try (Button button = new Button(24)) {
-            button.whenPressed(n -> playButton.press());
-            button.whenReleased(n -> playButton.release());
+            button.whenPressed(n -> {
+                System.out.println("PRESSED2");
+                playButton.press();
+            });
+            button.whenReleased(n -> {
+                System.out.println("RELEASED2");
+                playButton.release();
+            });
         }
         try {
             Thread.currentThread().join();
