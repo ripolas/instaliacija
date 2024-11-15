@@ -1,8 +1,11 @@
 import Audio.AudioPlayer;
 import Audio.AudioRecorder;
 import Buttons.LightableButton;
-import com.diozero.api.GpioPullUpDown;
 import com.diozero.devices.Button;
+
+import java.io.File;
+import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
 
 public class Main {
     public static long index = 10000L;
@@ -15,6 +18,9 @@ public class Main {
     public static LightableButton recordButton = new LightableButton();
     public static LightableButton playButton = new LightableButton();
 
+    public static String constructPath(long fileIndex){
+        return "test" + fileIndex + ".wav";
+    }
     public static void turnOff(LightableButton button){
         button.clearNextAction();
         button.setLit(false);
@@ -49,7 +55,7 @@ public class Main {
     public static Runnable getDefaultRecordAction(){
         return () -> {
             turnOffButtons();
-            recorder = new AudioRecorder("test" + index + ".wav");
+            recorder = new AudioRecorder(constructPath(index));
             index ++;
             recorder.start();
             recordButton.setNextAction(() -> {
@@ -61,7 +67,7 @@ public class Main {
     public static Runnable getDefaultPlayAction(){
         return () -> {
             turnOffButtons();
-            player = new AudioPlayer("test" + (index-1) + ".wav");
+            player = new AudioPlayer(constructPath(index-1));
             player.play();
             long length = player.getMicrosecondLength() / 1000L + 1L;
             try {
@@ -73,8 +79,18 @@ public class Main {
         };
     }
     public static void main(String[] args) {
+        turnOffButtons();
+        for(long i=0;; i++){
+            long newIndex = index + i;
+            File file = new File(constructPath(newIndex));
+            if(!file.exists()){
+                index = newIndex;
+                break;
+            }
+        }
         setDefaultActions();
         setLit(true);
+
         try (Button button = new Button(23)) {
             button.whenPressed(n -> {
                 System.out.println("PRESSED1");
@@ -85,7 +101,7 @@ public class Main {
                 recordButton.release();
             });
         }
-        try (Button button = new Button(24)) {
+        try (Button button = new Button(16)) {
             button.whenPressed(n -> {
                 System.out.println("PRESSED2");
                 playButton.press();
@@ -113,13 +129,25 @@ public class Main {
         }catch (Exception e){
             throw new RuntimeException(e);
         }
-        /*Scanner scanner = new Scanner(System.in);
+        /*CompletableFuture.runAsync(() -> {
+           while(true){
+               try {
+                   Thread.sleep(3000L);
+               }catch (Exception e){
+
+               }
+               System.out.println((recordButton.isLit() ? "X" : ".") + " " + (playButton.isLit() ? "X" : "."));
+               System.out.println((recordButton.isPressed() ? "1" : "0") + " " + (playButton.isPressed() ? "1" : "0"));
+               System.out.println();
+           }
+        });
+        Scanner scanner = new Scanner(System.in);
         while(true){
             int in = scanner.nextInt();
-            if(in == 1){
-                recordButton.press();
+            if(in == 0){
+                recordButton.togglePress();
             }else{
-                playButton.press();
+                playButton.togglePress();
             }
         }*/
     }
