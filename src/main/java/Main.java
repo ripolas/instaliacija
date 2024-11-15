@@ -95,7 +95,8 @@ public class Main {
                 playButton.release();
             });
         }
-        for(int i=1; i<=27; i++) {
+        /*
+        for(int i=2; i<=27; i++) {
             try (Button button = new Button(i)) {
                 int finalI = i;
                 button.whenPressed(n -> {
@@ -107,7 +108,7 @@ public class Main {
                     playButton.release();
                 });
             }
-        }
+        }*/
         try {
             Thread.currentThread().join();
         }catch (Exception e){
