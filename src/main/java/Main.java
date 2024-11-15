@@ -9,7 +9,7 @@ public class Main {
     public static AudioRecorder recorder;
     public static AudioPlayer player;
 
-    public static final long delay = 5000L;
+    public static final long delay = 1000L;
 
     public static LightableButton recordButton = new LightableButton();
     public static LightableButton playButton = new LightableButton();
