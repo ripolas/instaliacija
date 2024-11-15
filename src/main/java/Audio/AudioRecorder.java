@@ -10,8 +10,7 @@ public class AudioRecorder {
     private final String path;
 
     public AudioRecorder(String path){
-        this.path = path;
-    }
+        this.path = path;}
 
     private static AudioFormat getAudioFormat() {
         float sampleRate = 44100;

@@ -62,10 +62,13 @@ public class Main {
             turnOffButtons();
             player = new AudioPlayer("test" + (index-1) + ".wav");
             player.play();
-            playButton.setNextAction(() -> {
-                player.stop();
-                executeDelay();
-            });
+            long length = player.getMicrosecondLength() / 1000L + 1L;
+            try {
+                Thread.sleep(length);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            executeDelay();
         };
     }
     public static void main(String[] args) {

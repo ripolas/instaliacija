@@ -19,7 +19,6 @@ public class AudioPlayer{
     public AudioPlayer(String filePath, int loopTimes) {
         this.filePath = filePath;
         this.loopTimes = loopTimes;
-
         try {
             clip = AudioSystem.getClip();
 
@@ -91,6 +90,10 @@ public class AudioPlayer{
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public long getMicrosecondLength(){
+        return clip.getMicrosecondLength();
     }
 
     private void resetAudioStream() throws Exception {
