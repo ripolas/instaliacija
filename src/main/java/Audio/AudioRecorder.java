@@ -51,4 +51,8 @@ public class AudioRecorder {
     public boolean isRecording(){
         return microphone != null && microphone.isRunning();
     }
+
+    public String getPath(){
+        return path;
+    }
 }

@@ -34,18 +34,24 @@ public class PhysicalButton {
 
     public void press(){
         try {
-            releaseLatch.await();
-            pressLatch = new CountDownLatch(1);
-            onPress.run();
+            if(!isPressed()) {
+                releaseLatch.await();
+                pressLatch = new CountDownLatch(0);
+                releaseLatch = new CountDownLatch(1);
+                onPress.run();
+            }
         }catch (Exception e){
             throw new RuntimeException(e);
         }
     }
     public void release(){
         try{
-            pressLatch.await();
-            releaseLatch = new CountDownLatch(1);
-            onRelease.run();
+            if(isPressed()) {
+                pressLatch.await();
+                releaseLatch = new CountDownLatch(0);
+                pressLatch = new CountDownLatch(1);
+                onRelease.run();
+            }
         }catch (Exception e){
             throw new RuntimeException(e);
         }
