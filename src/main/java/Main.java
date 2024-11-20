@@ -5,18 +5,16 @@ import com.fazecast.jSerialComm.SerialPort;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
     public static long index = 10000L;
 
-    public static AudioRecorder recorder;
-    public static AudioPlayer player;
-
     public static final long delay = 3000L;
-    public static final long minimumRecording = 3000L;
-    public static final long maximumRecording = 5000L;
+    public static final long minimumRecording = 3000L; //Minimum recording length in milliseconds
+    public static final long maximumRecording = 60000L; //Maximum recording length in milliseconds
 
     public static LightableButton recordButton = new LightableButton();
     public static LightableButton playButton = new LightableButton();
@@ -41,54 +39,58 @@ public class Main {
         playButton.clearNextAction();
     }
     public static void setDefaultActions(){
+        setLit(true); //Lights up the lights
         recordButton.setOnPress(getDefaultRecordAction());
+        recordButton.clearOnRelease();
         playButton.setOnPress(getDefaultPlayAction());
+        playButton.clearOnRelease();
     }
     public static void executeDelay(){
-        clearNextActions();
-        CompletableFuture.runAsync(() -> {
+        turnOffButtons(); // Turns off buttons before the delay
+        CompletableFuture.runAsync(() -> { //Runs the delay in a CompletableFuture to avoid blocking the main thread
             try {
-                Thread.sleep(delay);
+                Thread.sleep(delay); // Delay
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            setDefaultActions();
-            setLit(true);
+            setDefaultActions(); // Turns on the buttons after the delay
         });
     }
 
     public static Runnable getDefaultRecordAction(){
         return () -> {
             turnOffButtons();
-            recorder = new AudioRecorder(constructPath(index));
-            index ++;
-            long startTime = System.currentTimeMillis();
-            recorder.start();
+            AudioRecorder recorder = new AudioRecorder(constructPath(index)); //Creates a recorder
+            index ++; //Increase the timer by one for the next file
+            long startTime = System.currentTimeMillis(); //Saves the time when the recording started
+            recorder.start(); //Starts recording
+            recordButton.setLit(true); //Lights up the record button to indicate recording
             AtomicBoolean running = new AtomicBoolean(true);
             CompletableFuture.runAsync(() -> {
                 try {
-                    Thread.sleep(maximumRecording);
+                    Thread.sleep(maximumRecording); //Sleeps off-thread
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-                if(running.get()){
+                if(running.get()){ //Checks if it is still recording
                     System.out.println("Recording trimmed due to being to long!");
-                    recordButton.release();
+                    recordButton.release(); //Forcefully releases the record button if the recording is too long
                 }
             });
-            recordButton.setNextAction(() -> {
-                recordButton.clearOnRelease();
-                running.set(false);
-                turnOffButtons();
-                long dif = System.currentTimeMillis() - startTime;
-                recorder.stop();
+            recordButton.setNextAction(() -> { //Sets action to do on release
+                recordButton.clearOnRelease(); // Clears action in case the button was released artificially and not physically
+                running.set(false); //Indicates that the recording stopped
+                turnOffButtons(); //Turns off buttons for delay
+                long dif = System.currentTimeMillis() - startTime; //Checks the length of the recording
+                recorder.stop(); //Stops recording
                 CompletableFuture.runAsync(() -> {
-                    if(dif < minimumRecording){
+                    if(dif < minimumRecording){ //Checks if the recording is under minimum length
                         System.out.println("Recording was deleted due to being too short!");
-                         File file = new File(recorder.getPath());
-                         if(file.exists()){
-                             file.delete();
-                         }
+                        File file = new File(recorder.getPath());
+                        if(file.exists()){ //Checks if the file exists (it might not create a file if the recording is too short)
+                            file.delete();
+                        }
+                        index--; //Deducts index because the file wasn't saved
                     }
                     executeDelay();
                 });
@@ -98,23 +100,28 @@ public class Main {
     public static Runnable getDefaultPlayAction(){
         return () -> {
             turnOffButtons();
-            player = new AudioPlayer(constructPath(index-1L));
-            player.play();
+            long indexToPlay = index-1;
+            AudioPlayer player = new AudioPlayer(constructPath(indexToPlay)); //Creates a player
+            player.play(); //Starts playing
+            playButton.setLit(true); //Lights up the button to indicate playing
             CompletableFuture.runAsync(() -> {
-                long length = player.getMicrosecondLength() / 1000L + 1L;
+                long length = player.getMicrosecondLength() / 1000L + 1L; //Gets the length of the recording
                 try {
                     Thread.sleep(length);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-                player.stop();
+                player.stop(); //Stops playing (I'm not sure if it doesn't stop playing automatically)
                 executeDelay();
             });
         };
     }
+
     public static void main(String[] args) {
-        turnOffButtons();
-        for(long i=0;; i++){
+        turnOffButtons(); //turn off buttons while searching for indices
+
+        // loops files and sets the index to the first one missing
+        for(long i=0; ; i++){
             long newIndex = index + i;
             File file = new File(constructPath(newIndex));
             if(!file.exists()){
@@ -122,8 +129,8 @@ public class Main {
                 break;
             }
         }
-        setDefaultActions();
-        setLit(true);
+
+        setDefaultActions(); //Turns on the buttons
         /*
         for(int i=2; i<=27; i++) {
             try (Button button = new Button(i)) {
@@ -138,7 +145,9 @@ public class Main {
                 });
             }
         }*/
-        SerialPort serialPort = SerialPort.getCommPort("COM6");
+        /*
+        final String port = "COM6";
+        SerialPort serialPort = SerialPort.getCommPort(port);
         serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
         serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
 
@@ -150,7 +159,7 @@ public class Main {
                 boolean cachedRecordPressed = false;
                 boolean cachedPlayPressed = false;
                 while (true) {
-                    inputStream.skip(inputStream.available());
+                    inputStream.skip(inputStream.available()); //makes sure to read the last byte
                     int lastByte = inputStream.read();
                     int receivedByte = lastByte & 0xFF;
                     boolean recordPressed = (receivedByte / 2 == 1);
@@ -191,7 +200,8 @@ public class Main {
         } else {
             System.out.println("Failed to open port.");
         }
-        /*CompletableFuture.runAsync(() -> {
+         */
+        CompletableFuture.runAsync(() -> {
            while(true){
                try {
                    Thread.sleep(3000L);
@@ -211,6 +221,6 @@ public class Main {
             }else{
                 playButton.togglePress();
             }
-        }*/
+        }
     }
 }

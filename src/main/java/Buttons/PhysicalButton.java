@@ -5,8 +5,9 @@ import java.util.concurrent.CountDownLatch;
 public class PhysicalButton {
     private Runnable onPress = () -> {};
     private Runnable onRelease = () -> {};
-    private CountDownLatch releaseLatch = new CountDownLatch(0);
-    private CountDownLatch pressLatch = new CountDownLatch(1);
+    public boolean pressed = false;
+    //private CountDownLatch releaseLatch = new CountDownLatch(0);
+    //private CountDownLatch pressLatch = new CountDownLatch(1);
 
     public void setOnPress(Runnable runnable){
         onPress = runnable;
@@ -35,9 +36,10 @@ public class PhysicalButton {
     public void press(){
         try {
             if(!isPressed()) {
-                releaseLatch.await();
-                pressLatch = new CountDownLatch(0);
-                releaseLatch = new CountDownLatch(1);
+                //releaseLatch.await();
+                //pressLatch = new CountDownLatch(0);
+                //releaseLatch = new CountDownLatch(1);
+                pressed = true;
                 onPress.run();
             }
         }catch (Exception e){
@@ -47,9 +49,10 @@ public class PhysicalButton {
     public void release(){
         try{
             if(isPressed()) {
-                pressLatch.await();
-                releaseLatch = new CountDownLatch(0);
-                pressLatch = new CountDownLatch(1);
+                //pressLatch.await();
+                //releaseLatch = new CountDownLatch(0);
+                //pressLatch = new CountDownLatch(1);
+                pressed = false;
                 onRelease.run();
             }
         }catch (Exception e){
@@ -64,6 +67,6 @@ public class PhysicalButton {
         }
     }
     public boolean isPressed(){
-        return releaseLatch.getCount() == 1;
+        return pressed;
     }
 }

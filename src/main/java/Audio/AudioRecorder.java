@@ -30,13 +30,13 @@ public class AudioRecorder {
         try {
             microphone = (TargetDataLine) AudioSystem.getLine(info);
             microphone.open(format);
-            microphone.start();
             File file = new File(path);
             CompletableFuture.runAsync(() -> {
                 try (AudioInputStream audioStream = new AudioInputStream(microphone)) {
                     AudioSystem.write(audioStream, AudioFileFormat.Type.WAVE, file);
                 } catch (Exception ignored) {}
             });
+            microphone.start();
         } catch (Exception ignored) {
         }
     }
