@@ -38,7 +38,7 @@ public class Main {
         return positiveChances;
     }
     public static long getResetChance(){
-        return Math.max(resetChance, -(getPositiveChances().size() - 1));
+        return Math.max(resetChance, -(getPositiveChances().size() - 2));
     }
 
     public static final String statsPath = "stats.txt"; //The file where stats should be saved
