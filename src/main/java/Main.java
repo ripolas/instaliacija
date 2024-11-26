@@ -155,7 +155,6 @@ public class Main {
         return () -> {
             turnOffButtons();
             AudioRecorder recorder = new AudioRecorder(constructPath(index)); //Creates a recorder
-            index ++; //Increase the timer by one for the next file
             long startTime = System.currentTimeMillis(); //Saves the time when the recording started
             recorder.start(); //Starts recording
             recordButton.setLit(true); //Lights up the record button to indicate recording
@@ -180,7 +179,6 @@ public class Main {
                 stats.recorded++;
                 if(dif < minimumRecording){ //Checks if the recording is under minimum length
                     System.out.println("Recording was deleted due to being too short!");
-                    index--; //Deducts index because the file wasn't saved
                     CompletableFuture.runAsync(() -> {
                         try {
                             File file = new File(recorder.getPath());
@@ -192,9 +190,12 @@ public class Main {
                             throw new RuntimeException(e);
                         }
                     });
+                    System.out.println("I shat async");
                 }else{
-                    chances.put(index-1, getResetChance());
+                    chances.put(index, getResetChance());
+                    index ++; //Increase the timer by one for the next file
                 }
+                System.out.println("I'm executing cooldown");
                 CompletableFuture.runAsync(Main::executeDelay);
             });
         };
