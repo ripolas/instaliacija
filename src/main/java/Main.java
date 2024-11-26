@@ -50,7 +50,7 @@ public class Main {
 //            player.play();
             try {
                 // Replace "ls" with your desired Linux command
-                Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","applay "+path});
+                Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","aplay "+path});
                 //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
                 //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -277,7 +277,7 @@ public class Main {
                 //player.play(); //Starts playing
                 try {
                     // Replace "ls" with your desired Linux command
-                    Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","applay "+path});
+                    Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","aplay "+path});
                     //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
                     //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
                     BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
