@@ -250,6 +250,7 @@ public class Main {
 
 
                 String path = constructPath(indexToPlay);
+                new AudioPlayer(path);
                 AudioPlayer player = new AudioPlayer(path); //Creates a player
                 System.out.println("Playing \"" + path + "\"");
                 player.play(); //Starts playing
