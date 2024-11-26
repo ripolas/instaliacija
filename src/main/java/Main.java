@@ -187,6 +187,8 @@ public class Main {
                             Thread.sleep(500L);
                             file.delete();
                         }catch (Exception e){
+                            System.out.println("How tf did I die rn");
+                            e.printStackTrace();
                             throw new RuntimeException(e);
                         }
                     });
