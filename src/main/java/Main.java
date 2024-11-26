@@ -27,9 +27,18 @@ public class Main {
     public static long index = startingIndex;
 
     public static HashMap<Long, Long> chances = new HashMap<>();
-
+    public static HashMap<Long, Long> getPositiveChances(){
+        HashMap<Long, Long> positiveChances = new HashMap<>();
+        for(Long key : chances.keySet()){
+            Long value = chances.get(key);
+            if(value > 0){
+                positiveChances.put(key, value);
+            }
+        }
+        return positiveChances;
+    }
     public static long getResetChance(){
-        return Math.max(resetChance, -(chances.size() - 1));
+        return Math.max(resetChance, -(getPositiveChances().size() - 1));
     }
 
     public static final String statsPath = "stats.txt"; //The file where stats should be saved
@@ -194,13 +203,7 @@ public class Main {
             turnOffButtons();
 
             //randomize index (trust the process)
-            HashMap<Long, Long> positiveChances = new HashMap<>();
-            for(Long key : chances.keySet()){
-                Long value = chances.get(key);
-                if(value > 0){
-                    positiveChances.put(key, value);
-                }
-            }
+            HashMap<Long, Long> positiveChances = getPositiveChances();
             chances.replaceAll((k, v) -> v + 1L); //Increments all elements by 1
             int chanceSize = positiveChances.size();
             Long[] chance = new Long[chanceSize];
@@ -342,8 +345,14 @@ public class Main {
                 int in = scanner.nextInt();
                 if (in == 0) {
                     recordButton.togglePress();
+                    if(recordButton.isPressed()){
+                        stats.recordClicked++;
+                    }
                 } else {
                     playButton.togglePress();
+                    if(playButton.isPressed()){
+                        stats.playClicked++;
+                    }
                 }
             }
         }
