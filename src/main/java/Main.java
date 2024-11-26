@@ -142,12 +142,14 @@ public class Main {
     }
     public static void executeDelay(){
         turnOffButtons(); // Turns off buttons before the delay
+        System.out.println("Cooldown...");
         CompletableFuture.runAsync(() -> { //Runs the delay in a CompletableFuture to avoid blocking the main thread
             try {
                 Thread.sleep(delay); // Delay
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            System.out.println("Cooldown over!");
             setDefaultActions(); // Turns on the buttons after the delay
         });
     }
@@ -191,12 +193,10 @@ public class Main {
                             throw new RuntimeException(e);
                         }
                     });
-                    System.out.println("I shat async");
                 }else{
                     chances.put(index, getResetChance());
                     index ++; //Increase the timer by one for the next file
                 }
-                System.out.println("I'm executing cooldown");
                 CompletableFuture.runAsync(Main::executeDelay);
             });
         };
