@@ -262,7 +262,7 @@ public class Main {
                 AudioPlayer player = new AudioPlayer(path); //Creates a player
                 System.out.println("Playing \"" + path + "\"");
                 //player.play(); //Starts playing
-                try {
+                 try {
                     // Replace "ls" with your desired Linux command
                     Process process = Runtime.getRuntime().exec("cd instaliacija");
                     process.waitFor(); // Wait for the command to complete
