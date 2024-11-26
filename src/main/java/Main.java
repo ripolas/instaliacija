@@ -204,12 +204,14 @@ public class Main {
 
             //randomize index (trust the process)
             HashMap<Long, Long> positiveChances = getPositiveChances();
+            ArrayList<Long> keySet = new ArrayList<>(chances.keySet());
             chances.replaceAll((k, v) -> v + 1L); //Increments all elements by 1
             int chanceSize = positiveChances.size();
             Long[] chance = new Long[chanceSize];
             long prevSum = 0;
+            ArrayList<Long> values = new ArrayList<>(chances.values());
             for(int i=0; i<chanceSize; i++){
-                prevSum += new ArrayList<>(chances.values()).get(i);
+                prevSum += values.get(i);
                 chance[i] = prevSum;
             }
             long randomLong = new Random().nextLong(prevSum);
@@ -220,7 +222,7 @@ public class Main {
                     break;
                 }
             }
-            long indexToPlay = new ArrayList<>(chances.keySet()).get(chanceIndex);
+            long indexToPlay = keySet.get(chanceIndex);
             chances.put(indexToPlay, getResetChance());
 
 
