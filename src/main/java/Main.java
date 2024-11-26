@@ -275,6 +275,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        AudioPlayer player = new AudioPlayer("Audio/mem10000.wav");
+        player.play();
         turnOffButtons(); //turn off buttons while searching for indices
 
         // loops files and sets the index to the first one missing
