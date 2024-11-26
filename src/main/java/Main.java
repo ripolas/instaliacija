@@ -117,7 +117,8 @@ public class Main {
         return name;
     }
     public static void turnOff(LightableButton button){
-        button.clearNextAction();
+        button.clearOnPress();
+        button.clearOnRelease();
         button.setLit(false);
     }
     public static void turnOffButtons(){
