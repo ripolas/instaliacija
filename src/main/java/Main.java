@@ -14,10 +14,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
-    public static final boolean useArduino = false; //Uses console if false
+    public static final boolean useArduino = true; //Uses console if false
     public static final String arduinoPort = "/dev/ttyACM0"; //Only used if useArduino is true
+    //public static final String arduinoPort = "COM6"; // windows laptop
     public static final long startingIndex = 10000L; //The count from which the recordings start to get counted
-    public static final long delay = 3000L; //Delay after finishing a recording / listening (DON'T SET UNDER 500L! (file deletion delay))
+    public static final long delay = 3000L; //Delay after finishing a recording / listening (DON'T SET UNDER 1000L! (file deletion delay))
     public static final long minimumRecording = 3000L; //Minimum recording length in milliseconds
     public static final long maximumRecording = 60000L; //Maximum recording length in milliseconds
     public static final long resetChance = -2L; //How many entries in the pool a recording should get after being played
@@ -204,7 +205,7 @@ public class Main {
                     CompletableFuture.runAsync(() -> {
                         try {
                             File file = new File(recorder.getPath());
-                            Thread.sleep(500L); // File gets written to after the recorder gets stopped for ??? reason
+                            Thread.sleep(1000L); // File gets written to after the recorder gets stopped for ??? reason
                             file.delete(); // Deletes the too short recording
                         }catch (Exception e){
                             throw new RuntimeException(e);
