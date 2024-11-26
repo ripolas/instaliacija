@@ -2,10 +2,8 @@ import Audio.AudioPlayer;
 import Audio.AudioRecorder;
 import Buttons.LightableButton;
 import com.fazecast.jSerialComm.SerialPort;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.OutputStream;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
@@ -47,9 +45,19 @@ public class Main {
     public static final String tooLongSoundPath = "toolong.wav"; //The file for the sound effect to be played when the recording gets cut due to exceeding the time limit
     public static void tryToPlaySound(String path){
         if(new File(path).exists()){
-            new AudioPlayer(path); //Needs to create an audio player before playing or the first time the sound doesn't play
-            AudioPlayer player = new AudioPlayer(path);
-            player.play();
+//            new AudioPlayer(path); //Needs to create an audio player before playing or the first time the sound doesn't play
+//            AudioPlayer player = new AudioPlayer(path);
+//            player.play();
+            try {
+                // Replace "ls" with your desired Linux command
+                Process process = Runtime.getRuntime().exec("cd instaliacija");
+                process.waitFor(); // Wait for the command to complete
+                process = Runtime.getRuntime().exec("aplay "+path);
+                process.waitFor(); // Wait for the command to complete
+                System.out.println("Command executed successfully.");
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -253,7 +261,17 @@ public class Main {
                 new AudioPlayer(path);
                 AudioPlayer player = new AudioPlayer(path); //Creates a player
                 System.out.println("Playing \"" + path + "\"");
-                player.play(); //Starts playing
+                //player.play(); //Starts playing
+                try {
+                    // Replace "ls" with your desired Linux command
+                    Process process = Runtime.getRuntime().exec("cd instaliacija");
+                    process.waitFor(); // Wait for the command to complete
+                    process = Runtime.getRuntime().exec("aplay "+path);
+                    process.waitFor(); // Wait for the command to complete
+                    System.out.println("Command executed successfully.");
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
                 playButton.setLit(true); //Lights up the button to indicate playing
                 stats.played++; //updates stats
                 stats.indexToTimesPlayed.put(indexToPlay, stats.indexToTimesPlayed.getOrDefault(indexToPlay, 0L) + 1L); //updates stats
