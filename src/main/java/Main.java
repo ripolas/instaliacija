@@ -193,7 +193,7 @@ public class Main {
                         }
                     });
                 }else{
-                    chances.put(index, getResetChance());
+                    chances.put(index-1, getResetChance());
                 }
                 CompletableFuture.runAsync(Main::executeDelay);
             });
