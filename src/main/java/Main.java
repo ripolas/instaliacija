@@ -14,12 +14,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
-    public static final boolean useArduino = true; //Uses console if false
+    public static final boolean useArduino = false; //Uses console if false
+    public static final String arduinoPort = "/dev/ttyACM0"; //Only used if useArduino is true
     public static final long startingIndex = 10000L; //The count from which the recordings start to get counted
     public static final long delay = 3000L; //Delay after finishing a recording / listening (DON'T SET UNDER 500L! (file deletion delay))
     public static final long minimumRecording = 3000L; //Minimum recording length in milliseconds
     public static final long maximumRecording = 60000L; //Maximum recording length in milliseconds
-    public static final long resetChance = -10L; //How many entries in the pool a recording should get after being played
+    public static final long resetChance = -2L; //How many entries in the pool a recording should get after being played
 
     public static LightableButton recordButton = new LightableButton();
     public static LightableButton playButton = new LightableButton();
@@ -41,9 +42,19 @@ public class Main {
         return Math.max(resetChance, -(getPositiveChances().size() - 2));
     }
 
+    public static final String tooShortSoundPath = "tooshort.wav"; //The file for the sound effect to be played when the recording doesn't get saved due to being too short
+    public static final String tooLongSoundPath = "toolong.wav"; //The file for the sound effect to be played when the recording gets cut due to exceeding the time limit
+    public static void tryToPlaySound(String path){
+        if(new File(path).exists()){
+            new AudioPlayer(path); //Needs to create an audio player before playing or the first time the sound doesn't play
+            AudioPlayer player = new AudioPlayer(path);
+            player.play();
+        }
+    }
+
     public static final String statsPath = "stats.txt"; //The file where stats should be saved
     public static final long statsSaveInterval = 15000L; //Interval in which stats get saved
-    public static final Stats stats = new File(statsPath).exists() ? Stats.loadFromFile(statsPath) : new Stats();
+    public static final Stats stats = new File(statsPath).exists() ? Stats.loadFromFile(statsPath) : new Stats(); //Checks if a stats file exists, loads from there if it does, creates a new stats file if it doesn't
 
     public static class Stats{
         public static Stats loadFromFile(String path){
@@ -141,16 +152,13 @@ public class Main {
         playButton.clearOnRelease();
     }
     public static void executeDelay(){
-        System.out.println("Turning off buttons...");
         turnOffButtons(); // Turns off buttons before the delay
-        System.out.println("Cooldown...");
         CompletableFuture.runAsync(() -> { //Runs the delay in a CompletableFuture to avoid blocking the main thread
             try {
                 Thread.sleep(delay); // Delay
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            System.out.println("Cooldown over!");
             setDefaultActions(); // Turns on the buttons after the delay
         });
     }
@@ -158,39 +166,47 @@ public class Main {
     public static Runnable getDefaultRecordAction(){
         return () -> {
             turnOffButtons();
-            AudioRecorder recorder = new AudioRecorder(constructPath(index)); //Creates a recorder
+            String path = constructPath(index);
+            AudioRecorder recorder = new AudioRecorder(path); //Creates a recorder
             long startTime = System.currentTimeMillis(); //Saves the time when the recording started
+            System.out.println("Recording to \"" + path + "\"");
             recorder.start(); //Starts recording
             recordButton.setLit(true); //Lights up the record button to indicate recording
             AtomicBoolean running = new AtomicBoolean(true);
-            CompletableFuture.runAsync(() -> {
+            AtomicBoolean playSound = new AtomicBoolean(false);
+            Thread thread = new Thread(() -> {
                 try {
                     Thread.sleep(maximumRecording); //Sleeps off-thread
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                } catch (Exception ignored) {}
                 if(running.get()){ //Checks if it is still recording
-                    System.out.println("Recording trimmed due to being to long!");
+                    playSound.set(true);
+                    System.out.println("Recording trimmed due to being too long!");
                     recordButton.release(); //Forcefully releases the record button if the recording is too long
                 }
             });
+            thread.start();
             recordButton.setNextAction(() -> { //Sets action to do on release
+                thread.interrupt(); //Frees up a thread
                 recordButton.clearOnRelease(); // Clears action in case the button was released artificially and not physically
                 running.set(false); //Indicates that the recording stopped
                 turnOffButtons(); //Turns off buttons for delay
                 long dif = System.currentTimeMillis() - startTime; //Checks the length of the recording
                 recorder.stop(); //Stops recording
-                stats.recorded++;
+                if(playSound.get()){
+                    tryToPlaySound(tooLongSoundPath);
+                }
+                stats.recorded++; //Increments stats
                 if(dif < minimumRecording){ //Checks if the recording is under minimum length
+                    long start = System.currentTimeMillis();
+                    tryToPlaySound(tooShortSoundPath);
+                    System.out.println(System.currentTimeMillis() - start);
                     System.out.println("Recording was deleted due to being too short!");
                     CompletableFuture.runAsync(() -> {
                         try {
                             File file = new File(recorder.getPath());
-                            Thread.sleep(500L);
-                            file.delete();
+                            Thread.sleep(500L); // File gets written to after the recorder gets stopped for ??? reason
+                            file.delete(); // Deletes the too short recording
                         }catch (Exception e){
-                            System.out.println("How tf did I die rn");
-                            e.printStackTrace();
                             throw new RuntimeException(e);
                         }
                     });
@@ -198,9 +214,7 @@ public class Main {
                     chances.put(index, getResetChance());
                     index ++; //Increase the timer by one for the next file
                 }
-                System.out.println("About to call function...");
-                CompletableFuture.runAsync(Main::executeDelay);
-                System.out.println("Called async cooldown function");
+                executeDelay();
             });
         };
     }
@@ -211,43 +225,50 @@ public class Main {
 
             //randomize index (trust the process)
             HashMap<Long, Long> positiveChances = getPositiveChances();
-            ArrayList<Long> keySet = new ArrayList<>(chances.keySet());
             chances.replaceAll((k, v) -> v + 1L); //Increments all elements by 1
-            int chanceSize = positiveChances.size();
-            Long[] chance = new Long[chanceSize];
-            long prevSum = 0;
-            ArrayList<Long> values = new ArrayList<>(chances.values());
-            for(int i=0; i<chanceSize; i++){
-                prevSum += values.get(i);
-                chance[i] = prevSum;
-            }
-            long randomLong = new Random().nextLong(prevSum);
-            int chanceIndex = 0;
-            for(int i=chanceSize - 1; i>0; i--){
-                if(randomLong >= chance[i-1]){
-                    chanceIndex = i;
-                    break;
+            if(!positiveChances.isEmpty()) {
+                ArrayList<Long> keySet = new ArrayList<>(positiveChances.keySet());
+                ArrayList<Long> values = new ArrayList<>(positiveChances.values());
+                int chanceSize = positiveChances.size();
+                Long[] chance = new Long[chanceSize];
+                long prevSum = 0;
+                for (int i = 0; i < chanceSize; i++) {
+                    prevSum += values.get(i);
+                    chance[i] = prevSum;
                 }
-            }
-            long indexToPlay = keySet.get(chanceIndex);
-            chances.put(indexToPlay, getResetChance());
+                long randomLong = new Random().nextLong(prevSum);
+                int chanceIndex = 0;
+                for (int i = chanceSize - 1; i > 0; i--) {
+                    if (randomLong >= chance[i - 1]) {
+                        chanceIndex = i;
+                        break;
+                    }
+                }
+                long indexToPlay = keySet.get(chanceIndex);
+                chances.put(indexToPlay, getResetChance());
 
 
-            AudioPlayer player = new AudioPlayer(constructPath(indexToPlay)); //Creates a player
-            player.play(); //Starts playing
-            playButton.setLit(true); //Lights up the button to indicate playing
-            stats.played++; //updates stats
-            stats.indexToTimesPlayed.put(indexToPlay, stats.indexToTimesPlayed.getOrDefault(indexToPlay, 0L) + 1L); //updates stats
-            CompletableFuture.runAsync(() -> {
-                long length = player.getMicrosecondLength() / 1000L + 1L; //Gets the length of the recording
-                try {
-                    Thread.sleep(length);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                player.stop(); //Stops playing (I'm not sure if it doesn't stop playing automatically)
+                String path = constructPath(indexToPlay);
+                AudioPlayer player = new AudioPlayer(path); //Creates a player
+                System.out.println("Playing \"" + path + "\"");
+                player.play(); //Starts playing
+                playButton.setLit(true); //Lights up the button to indicate playing
+                stats.played++; //updates stats
+                stats.indexToTimesPlayed.put(indexToPlay, stats.indexToTimesPlayed.getOrDefault(indexToPlay, 0L) + 1L); //updates stats
+                CompletableFuture.runAsync(() -> {
+                    long length = player.getMicrosecondLength() / 1000L + 1L; //Gets the length of the recording
+                    try {
+                        Thread.sleep(length);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    player.stop(); //Stops playing (I'm not sure if it doesn't stop playing automatically)
+                    executeDelay();
+                });
+            }else{
+                System.out.println("No files to play!");
                 executeDelay();
-            });
+            }
         };
     }
 
@@ -280,8 +301,7 @@ public class Main {
 
         //true if physical buttons, false
         if(useArduino) {
-            final String port = "/dev/ttyACM0";
-            SerialPort serialPort = SerialPort.getCommPort(port);
+            SerialPort serialPort = SerialPort.getCommPort(arduinoPort);
             serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
             serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
 
