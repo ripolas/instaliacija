@@ -50,10 +50,9 @@ public class Main {
 //            player.play();
             try {
                 // Replace "ls" with your desired Linux command
-                Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija"});
-                process.waitFor(); // Wait for the command to complete
+                Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija && applay "+path});
                 //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
-                process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
+                //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
@@ -276,25 +275,24 @@ public class Main {
                 AudioPlayer player = new AudioPlayer(path); //Creates a player
                 System.out.println("Playing \"" + path + "\"");
                 //player.play(); //Starts playing
-                 try {
+                try {
                     // Replace "ls" with your desired Linux command
-                    Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija"});
-                    process.waitFor(); // Wait for the command to complete
-                    //process = Runtime.getRuntime().exec(new String[]{"bash","aplay "+path});
-                     process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
-                     BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                     BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                    Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija && applay "+path});
+                    //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
+                    //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
-                     String line;
-                     System.out.println("Standard Output:");
-                     while ((line = reader.readLine()) != null) {
-                         System.out.println(line);
-                     }
+                    String line;
+                    System.out.println("Standard Output:");
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
+                    }
 
-                     System.out.println("Error Output:");
-                     while ((line = errorReader.readLine()) != null) {
-                         System.out.println(line);
-                     }
+                    System.out.println("Error Output:");
+                    while ((line = errorReader.readLine()) != null) {
+                        System.out.println(line);
+                    }
                     process.waitFor(); // Wait for the command to complete
                     System.out.println("Command executed successfully.");
                 } catch (IOException | InterruptedException e) {
