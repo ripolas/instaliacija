@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
-    public static final boolean useArduino = false; //Uses console if false
+    public static final boolean useArduino = true; //Uses console if false
     public static final long startingIndex = 10000L; //The count from which the recordings start to get counted
     public static final long delay = 3000L; //Delay after finishing a recording / listening (DON'T SET UNDER 500L! (file deletion delay))
     public static final long minimumRecording = 3000L; //Minimum recording length in milliseconds
