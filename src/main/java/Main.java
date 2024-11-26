@@ -3,24 +3,109 @@ import Audio.AudioRecorder;
 import Buttons.LightableButton;
 import com.fazecast.jSerialComm.SerialPort;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
-    public static long index = 10000L;
-
-    public static final long delay = 3000L;
+    public static final boolean useArduino = false; //Uses console if false
+    public static final long startingIndex = 10000L; //The count from which the recordings start to get counted
+    public static final long delay = 3000L; //Delay after finishing a recording / listening (DON'T SET UNDER 500L! (file deletion delay))
     public static final long minimumRecording = 3000L; //Minimum recording length in milliseconds
     public static final long maximumRecording = 60000L; //Maximum recording length in milliseconds
+    public static final long resetChance = -10L; //How many entries in the pool a recording should get after being played
 
     public static LightableButton recordButton = new LightableButton();
     public static LightableButton playButton = new LightableButton();
 
+    public static long index = startingIndex;
+
+    public static HashMap<Long, Long> chances = new HashMap<>();
+
+    public static long getResetChance(){
+        return Math.max(resetChance, -(chances.size() - 1));
+    }
+
+    public static final String statsPath = "stats.txt"; //The file where stats should be saved
+    public static final long statsSaveInterval = 15000L; //Interval in which stats get saved
+    public static final Stats stats = new File(statsPath).exists() ? Stats.loadFromFile(statsPath) : new Stats();
+
+    public static class Stats{
+        public static Stats loadFromFile(String path){
+            try {
+                File myObj = new File(path);
+                Scanner myReader = new Scanner(myObj);
+                long[] data = new long[4];
+                for(int i=0; i<4; i++){
+                    String line = myReader.nextLine();
+                    String unparsedNum = line.split(":")[1];
+                    data[i] = Long.parseLong(unparsedNum);
+                }
+                HashMap<Long, Long> readData = new HashMap<>();
+                while(myReader.hasNextLine()){
+                    String line = myReader.nextLine();
+                    String[] split = line.split(":");
+                    readData.put(Long.parseLong(split[0]), Long.parseLong(split[1]));
+                }
+                myReader.close();
+
+                Stats stats = new Stats();
+                stats.recordClicked = data[0];
+                stats.recorded = data[1];
+                stats.playClicked = data[2];
+                stats.played = data[3];
+                stats.indexToTimesPlayed = readData;
+                return stats;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        public void saveToFile(String path){
+            try {
+                File file = new File(path);
+                if(!file.exists()){
+                    file.createNewFile();
+                }
+
+                StringBuilder builder = new StringBuilder(String.format(
+                        "recordClicked:%s\nrecorded:%s\nplayClicked:%s\nplayed:%s",
+                        recordClicked,
+                        recorded,
+                        playClicked,
+                        played
+                ));
+                for(Long key : indexToTimesPlayed.keySet()){
+                    Long value = indexToTimesPlayed.get(key);
+                    builder.append("\n").append(key).append(":").append(value);
+                }
+
+                FileWriter myWriter = new FileWriter(path);
+                myWriter.write(builder.toString());
+                myWriter.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public long recordClicked = 0L;
+        public long recorded = 0L;
+
+        public long playClicked = 0L;
+        public long played = 0L;
+
+        public HashMap<Long, Long> indexToTimesPlayed = new HashMap<>();
+    }
+
     public static String constructPath(long fileIndex){
-        return "test" + fileIndex + ".wav";
+        String name = "Audio/mem" + fileIndex + ".wav";
+        new File(name).getParentFile().mkdirs();
+        return name;
     }
     public static void turnOff(LightableButton button){
         button.clearNextAction();
@@ -83,27 +168,64 @@ public class Main {
                 turnOffButtons(); //Turns off buttons for delay
                 long dif = System.currentTimeMillis() - startTime; //Checks the length of the recording
                 recorder.stop(); //Stops recording
-                CompletableFuture.runAsync(() -> {
-                    if(dif < minimumRecording){ //Checks if the recording is under minimum length
-                        System.out.println("Recording was deleted due to being too short!");
-                        File file = new File(recorder.getPath());
-                        if(file.exists()){ //Checks if the file exists (it might not create a file if the recording is too short)
+                stats.recorded++;
+                if(dif < minimumRecording){ //Checks if the recording is under minimum length
+                    System.out.println("Recording was deleted due to being too short!");
+                    index--; //Deducts index because the file wasn't saved
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            File file = new File(recorder.getPath());
+                            Thread.sleep(500L);
                             file.delete();
+                        }catch (Exception e){
+                            throw new RuntimeException(e);
                         }
-                        index--; //Deducts index because the file wasn't saved
-                    }
-                    executeDelay();
-                });
+                    });
+                }else{
+                    chances.put(index, getResetChance());
+                }
+                CompletableFuture.runAsync(Main::executeDelay);
             });
         };
     }
+
     public static Runnable getDefaultPlayAction(){
         return () -> {
             turnOffButtons();
-            long indexToPlay = index-1;
+
+            //randomize index (trust the process)
+            HashMap<Long, Long> positiveChances = new HashMap<>();
+            for(Long key : chances.keySet()){
+                Long value = chances.get(key);
+                if(value > 0){
+                    positiveChances.put(key, value);
+                }
+            }
+            chances.replaceAll((k, v) -> v + 1L); //Increments all elements by 1
+            int chanceSize = positiveChances.size();
+            Long[] chance = new Long[chanceSize];
+            long prevSum = 0;
+            for(int i=0; i<chanceSize; i++){
+                prevSum += new ArrayList<>(chances.values()).get(i);
+                chance[i] = prevSum;
+            }
+            long randomLong = new Random().nextLong(prevSum);
+            int chanceIndex = 0;
+            for(int i=chanceSize - 1; i>0; i--){
+                if(randomLong >= chance[i-1]){
+                    chanceIndex = i;
+                    break;
+                }
+            }
+            long indexToPlay = new ArrayList<>(chances.keySet()).get(chanceIndex);
+            chances.put(indexToPlay, getResetChance());
+
+
             AudioPlayer player = new AudioPlayer(constructPath(indexToPlay)); //Creates a player
             player.play(); //Starts playing
             playButton.setLit(true); //Lights up the button to indicate playing
+            stats.played++; //updates stats
+            stats.indexToTimesPlayed.put(indexToPlay, stats.indexToTimesPlayed.getOrDefault(indexToPlay, 0L) + 1L); //updates stats
             CompletableFuture.runAsync(() -> {
                 long length = player.getMicrosecondLength() / 1000L + 1L; //Gets the length of the recording
                 try {
@@ -128,98 +250,101 @@ public class Main {
                 index = newIndex;
                 break;
             }
+            chances.put(newIndex, 1L);
         }
 
         setDefaultActions(); //Turns on the buttons
-        /*
-        for(int i=2; i<=27; i++) {
-            try (Button button = new Button(i)) {
-                int finalI = i;
-                button.whenPressed(n -> {
-                    System.out.println("PRESSED(" + finalI + ")");
-                    playButton.press();
-                });
-                button.whenReleased(n -> {
-                    System.out.println("RELEASED(" + finalI + ")");
-                    playButton.release();
-                });
-            }
-        }*/
-        /*
-        final String port = "COM6";
-        SerialPort serialPort = SerialPort.getCommPort(port);
-        serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
-        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
 
-        if (serialPort.openPort()) {
-            System.out.println("Port opened successfully!");
-            try {
-                InputStream inputStream = serialPort.getInputStream();
-                OutputStream outputStream = serialPort.getOutputStream();
-                boolean cachedRecordPressed = false;
-                boolean cachedPlayPressed = false;
-                while (true) {
-                    inputStream.skip(inputStream.available()); //makes sure to read the last byte
-                    int lastByte = inputStream.read();
-                    int receivedByte = lastByte & 0xFF;
-                    boolean recordPressed = (receivedByte / 2 == 1);
-                    boolean playPressed = (receivedByte % 2 == 1);
-                    if(recordPressed != cachedRecordPressed){
-                        cachedRecordPressed = recordPressed;
-                        if(recordPressed){
-                            System.out.println("Record pressed!");
-                            recordButton.press();
-                        }else{
-                            System.out.println("Record released!");
-                            recordButton.release();
-                        }
-                    }
-
-                    if(playPressed != cachedPlayPressed){
-                        cachedPlayPressed = playPressed;
-                        if(playPressed){
-                            System.out.println("Play pressed!");
-                            playButton.press();
-                        }else{
-                            System.out.println("Play released!");
-                            playButton.release();
-                        }
-                    }
-
-                    int recordLit = recordButton.isLit() ? 1 : 0;
-                    int playLit = playButton.isLit() ? 1 : 0;
-
-                    outputStream.write(recordLit * 2 + playLit);
+        CompletableFuture.runAsync(() -> { //
+            while(true){
+                try {
+                    Thread.sleep(statsSaveInterval);
+                    stats.saveToFile(statsPath);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            } finally {
-                serialPort.closePort();
-                System.out.println("Port closed.");
             }
-        } else {
-            System.out.println("Failed to open port.");
-        }
-         */
-        CompletableFuture.runAsync(() -> {
-           while(true){
-               try {
-                   Thread.sleep(3000L);
-               }catch (Exception e){
-
-               }
-               System.out.println((recordButton.isLit() ? "X" : ".") + " " + (playButton.isLit() ? "X" : "."));
-               System.out.println((recordButton.isPressed() ? "1" : "0") + " " + (playButton.isPressed() ? "1" : "0"));
-               System.out.println();
-           }
         });
-        Scanner scanner = new Scanner(System.in);
-        while(true){
-            int in = scanner.nextInt();
-            if(in == 0){
-                recordButton.togglePress();
-            }else{
-                playButton.togglePress();
+
+        //true if physical buttons, false
+        if(useArduino) {
+            final String port = "COM6";
+            SerialPort serialPort = SerialPort.getCommPort(port);
+            serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
+            serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
+
+            if (serialPort.openPort()) {
+                System.out.println("Port opened successfully!");
+                try {
+                    InputStream inputStream = serialPort.getInputStream();
+                    OutputStream outputStream = serialPort.getOutputStream();
+                    boolean cachedRecordPressed = false;
+                    boolean cachedPlayPressed = false;
+                    while (true) {
+                        inputStream.skip(inputStream.available()); //makes sure to read the last byte
+                        int lastByte = inputStream.read();
+                        int receivedByte = lastByte & 0xFF;
+                        boolean recordPressed = (receivedByte / 2 == 1);
+                        boolean playPressed = (receivedByte % 2 == 1);
+                        if (recordPressed != cachedRecordPressed) {
+                            cachedRecordPressed = recordPressed;
+                            if (recordPressed) {
+                                stats.recordClicked++;
+                                System.out.println("Record pressed!");
+                                recordButton.press();
+                            } else {
+                                System.out.println("Record released!");
+                                recordButton.release();
+                            }
+                        }
+
+                        if (playPressed != cachedPlayPressed) {
+                            cachedPlayPressed = playPressed;
+                            if (playPressed) {
+                                stats.playClicked++;
+                                System.out.println("Play pressed!");
+                                playButton.press();
+                            } else {
+                                System.out.println("Play released!");
+                                playButton.release();
+                            }
+                        }
+
+                        int recordLit = recordButton.isLit() ? 1 : 0;
+                        int playLit = playButton.isLit() ? 1 : 0;
+
+                        outputStream.write(recordLit * 2 + playLit);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    serialPort.closePort();
+                    System.out.println("Port closed.");
+                }
+            } else {
+                System.out.println("Failed to open port.");
+            }
+        }else {
+            CompletableFuture.runAsync(() -> {
+                while (true) {
+                    try {
+                        Thread.sleep(3000L);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    System.out.println((recordButton.isLit() ? "X" : ".") + " " + (playButton.isLit() ? "X" : "."));
+                    System.out.println((recordButton.isPressed() ? "1" : "0") + " " + (playButton.isPressed() ? "1" : "0"));
+                    System.out.println();
+                }
+            });
+            Scanner scanner = new Scanner(System.in);
+            while (true) {
+                int in = scanner.nextInt();
+                if (in == 0) {
+                    recordButton.togglePress();
+                } else {
+                    playButton.togglePress();
+                }
             }
         }
     }

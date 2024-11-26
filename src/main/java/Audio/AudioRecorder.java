@@ -24,9 +24,11 @@ public class AudioRecorder {
     public void start() {
         AudioFormat format = getAudioFormat();
         DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+        /* Expensive ah check, try uncommenting if microphone stops working maybe?
         if (!AudioSystem.isLineSupported(info)) {
             return;
         }
+        */
         try {
             microphone = (TargetDataLine) AudioSystem.getLine(info);
             microphone.open(format);
@@ -37,8 +39,7 @@ public class AudioRecorder {
                 } catch (Exception ignored) {}
             });
             microphone.start();
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 
     public void stop() {
