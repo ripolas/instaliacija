@@ -52,7 +52,7 @@ public class Main {
                 // Replace "ls" with your desired Linux command
                 Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija"});
                 process.waitFor(); // Wait for the command to complete
-                process = Runtime.getRuntime().exec(new String[]{"bash","aplay "+path});
+                process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
@@ -279,7 +279,7 @@ public class Main {
                     // Replace "ls" with your desired Linux command
                     Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija"});
                     process.waitFor(); // Wait for the command to complete
-                    process = Runtime.getRuntime().exec(new String[]{"bash","aplay "+path});
+                    process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
                      BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                      BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
