@@ -141,6 +141,7 @@ public class Main {
         playButton.clearOnRelease();
     }
     public static void executeDelay(){
+        System.out.println("Turning off buttons...");
         turnOffButtons(); // Turns off buttons before the delay
         System.out.println("Cooldown...");
         CompletableFuture.runAsync(() -> { //Runs the delay in a CompletableFuture to avoid blocking the main thread
@@ -197,7 +198,9 @@ public class Main {
                     chances.put(index, getResetChance());
                     index ++; //Increase the timer by one for the next file
                 }
+                System.out.println("About to call function...");
                 CompletableFuture.runAsync(Main::executeDelay);
+                System.out.println("Called async cooldown function");
             });
         };
     }
