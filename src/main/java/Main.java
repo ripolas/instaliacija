@@ -268,7 +268,7 @@ public class Main {
 
         //true if physical buttons, false
         if(useArduino) {
-            final String port = "COM1";
+            final String port = "COM2";
             SerialPort serialPort = SerialPort.getCommPort(port);
             serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
             serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
