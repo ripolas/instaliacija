@@ -50,9 +50,9 @@ public class Main {
 //            player.play();
             try {
                 // Replace "ls" with your desired Linux command
-                Process process = Runtime.getRuntime().exec("cd instaliacija");
+                Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija"});
                 process.waitFor(); // Wait for the command to complete
-                process = Runtime.getRuntime().exec("aplay "+path);
+                process = Runtime.getRuntime().exec(new String[]{"bash","aplay "+path});
                 process.waitFor(); // Wait for the command to complete
                 System.out.println("Command executed successfully.");
             } catch (IOException | InterruptedException e) {
@@ -264,9 +264,9 @@ public class Main {
                 //player.play(); //Starts playing
                  try {
                     // Replace "ls" with your desired Linux command
-                    Process process = Runtime.getRuntime().exec("cd instaliacija");
+                    Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","cd instaliacija"});
                     process.waitFor(); // Wait for the command to complete
-                    process = Runtime.getRuntime().exec("aplay "+path);
+                    process = Runtime.getRuntime().exec(new String[]{"bash","aplay "+path});
                     process.waitFor(); // Wait for the command to complete
                     System.out.println("Command executed successfully.");
                 } catch (IOException | InterruptedException e) {
