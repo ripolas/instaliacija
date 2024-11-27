@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
     public static final boolean useArduino = true; //Uses console if false
-    public static final String arduinoPort = "/dev/ttyACM0"; //Only used if useArduino is true
-    //public static final String arduinoPort = "COM6"; // windows laptop
+    public static final String arduinoPort = "/dev/ttyACM0"; //"COM6"; //Only used if useArduino is true
+    public static final boolean useLinux = true; //Plays sounds from command line interface if set to true
     public static final long startingIndex = 10000L; //The count from which the recordings start to get counted
     public static final long delay = 3000L; //Delay after finishing a recording / listening (DON'T SET UNDER 1000L! (file deletion delay))
     public static final long minimumRecording = 3000L; //Minimum recording length in milliseconds
@@ -45,32 +45,39 @@ public class Main {
     public static final String tooLongSoundPath = "toolong.wav"; //The file for the sound effect to be played when the recording gets cut due to exceeding the time limit
     public static void tryToPlaySound(String path){
         if(new File(path).exists()){
-//            new AudioPlayer(path); //Needs to create an audio player before playing or the first time the sound doesn't play
-//            AudioPlayer player = new AudioPlayer(path);
-//            player.play();
-            try {
-                // Replace "ls" with your desired Linux command
-                Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","aplay "+path});
-                //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
-                //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-                String line;
-                System.out.println("Standard Output:");
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                }
-
-                System.out.println("Error Output:");
-                while ((line = errorReader.readLine()) != null) {
-                    System.out.println(line);
-                }
-                process.waitFor(); // Wait for the command to complete
-                System.out.println("Command executed successfully.");
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
+            if(useLinux){
+                CompletableFuture.runAsync(() -> playSoundWithLinux(path));
+            }else {
+                new AudioPlayer(path); //Needs to create an audio player before playing or the first time the sound doesn't play
+                AudioPlayer player = new AudioPlayer(path);
+                player.play();
             }
+        }
+    }
+    public static void playSoundWithLinux(String path){
+        try {
+            // Replace "ls" with your desired Linux command
+            Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", "aplay " + path});
+            //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
+            //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
+            //BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            String line;
+            /*System.out.println("Standard Output:");
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+             */
+
+            //System.out.println("Error Output:");
+            while ((line = errorReader.readLine()) != null) {
+                System.out.println("Error: " + line);
+            }
+            process.waitFor(); // Wait for the command to complete
+            //System.out.println("Command executed successfully.");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -271,44 +278,24 @@ public class Main {
 
 
                 String path = constructPath(indexToPlay);
-                new AudioPlayer(path);
-                AudioPlayer player = new AudioPlayer(path); //Creates a player
-                System.out.println("Playing \"" + path + "\"");
-                //player.play(); //Starts playing
-                try {
-                    // Replace "ls" with your desired Linux command
-                    Process process = Runtime.getRuntime().exec(new String[]{"bash","-c","aplay "+path});
-                    //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
-                    //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-                    String line;
-                    System.out.println("Standard Output:");
-                    while ((line = reader.readLine()) != null) {
-                        System.out.println(line);
-                    }
-
-                    System.out.println("Error Output:");
-                    while ((line = errorReader.readLine()) != null) {
-                        System.out.println(line);
-                    }
-                    process.waitFor(); // Wait for the command to complete
-                    System.out.println("Command executed successfully.");
-                } catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
-                }
                 playButton.setLit(true); //Lights up the button to indicate playing
                 stats.played++; //updates stats
                 stats.indexToTimesPlayed.put(indexToPlay, stats.indexToTimesPlayed.getOrDefault(indexToPlay, 0L) + 1L); //updates stats
+                System.out.println("Playing \"" + path + "\"");
                 CompletableFuture.runAsync(() -> {
-                    long length = player.getMicrosecondLength() / 1000L + 1L; //Gets the length of the recording
-                    try {
-                        Thread.sleep(length);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    if(useLinux) {
+                        playSoundWithLinux(path);
+                    }else {
+                        AudioPlayer player = new AudioPlayer(path); //Creates a player
+                        player.play(); //Starts playing
+                        long length = player.getMicrosecondLength() / 1000L + 1L; //Gets the length of the recording
+                        try {
+                            Thread.sleep(length);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                        player.stop(); //Stops playing (I'm not sure if it doesn't stop playing automatically)
                     }
-                    player.stop(); //Stops playing (I'm not sure if it doesn't stop playing automatically)
                     executeDelay();
                 });
             }else{
