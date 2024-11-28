@@ -226,9 +226,7 @@ public class Main {
                 }
                 stats.recorded++; //Increments stats
                 if(dif < minimumRecording){ //Checks if the recording is under minimum length
-                    long start = System.currentTimeMillis();
                     tryToPlaySound(tooShortSoundPath);
-                    System.out.println(System.currentTimeMillis() - start);
                     System.out.println("Recording was deleted due to being too short!");
                     CompletableFuture.runAsync(() -> {
                         try {
