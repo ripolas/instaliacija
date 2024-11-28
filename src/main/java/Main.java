@@ -60,20 +60,20 @@ public class Main {
             Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", "aplay " + path});
             //process = Runtime.getRuntime().exec(new String[]{"bash","/usr/bin/aplay "+path});
             //process = Runtime.getRuntime().exec(new String[]{"bash","-c","which aplay"});
-            //BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            /*BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
             String line;
-            /*System.out.println("Standard Output:");
+            System.out.println("Standard Output:");
             while ((line = reader.readLine()) != null) {
                 System.out.println(line);
             }
-             */
 
-            //System.out.println("Error Output:");
+            System.out.println("Error Output:");
             while ((line = errorReader.readLine()) != null) {
                 System.out.println("Error: " + line);
             }
+            */
             process.waitFor(); // Wait for the command to complete
             //System.out.println("Command executed successfully.");
         } catch (Exception e) {
